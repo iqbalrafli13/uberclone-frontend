@@ -30,12 +30,12 @@
 <script setup>
 import { useLocationStore } from '@/stores/location.js'
 import { useRouter } from 'vue-router';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 
 
 const router = useRouter()
 const location = useLocationStore();
-
+const gMap = ref(null)
 onMounted( async ()=>{
     //apakah user punya lokasi tujuan
     if (location.destination.name == '') {
@@ -46,6 +46,31 @@ onMounted( async ()=>{
 
     //get user location current
     await location.updateCurrentLocation();
+
+    
+    // draw a path on the map
+    gMap.value.$mapPromise.then((mapObject)=>{
+        let currentPoint = new google.maps.LatLng(location.current.geometry),
+            destinationPoint = new google.maps.LatLng(location.destination.geometry),
+            diractionService = new google.maps.DirectionsService,
+            diractionDisplay = new google.maps.DirectionsRenderer({
+                map:mapObject
+            })
+
+        diractionService.route({
+            origin:currentPoint,
+            destination:destinationPoint,
+            avoidTolls: false,
+            avoidHighways: false,
+            travelMode:google.maps.TravelMode.DRIVING
+        },(res,status)=>{
+            if (status == google.maps.DirectionsStatus.OK){
+                diractionDisplay.setDirections(res)
+            }else{
+                console.error(status);
+            }
+        })
+    })
 })
     
 </script>
